@@ -6,6 +6,8 @@
  * Do NOT read or write the .env file directly; the orchestrator sets env vars.
  */
 
+const fs = require('fs');
+const path = require('path');
 const dotenv = require('dotenv');
 
 // Load .env if present (non-fatal if missing)
@@ -31,13 +33,49 @@ function toInt(val, defaultVal) {
 }
 
 /**
+ * Try to read Mongo URI from the sibling ecommerce_database container's db_connection.txt.
+ * The file usually contains a line like: "mongosh <connection-string>" or just the raw URI.
+ */
+function tryReadMongoFromFile() {
+  try {
+    // Path relative to backend root
+    const candidate = path.resolve(__dirname, '../../..', 'ecommerce_database', 'db_connection.txt');
+    if (!fs.existsSync(candidate)) return null;
+    const raw = fs.readFileSync(candidate, 'utf-8').trim();
+    if (!raw) return null;
+
+    // Extract connection string if prefixed by "mongosh "
+    const mongoshPrefix = /^mongosh\s+/i;
+    if (mongoshPrefix.test(raw)) {
+      return raw.replace(mongoshPrefix, '').trim();
+    }
+
+    // If it looks like a mongodb uri, return as-is
+    if (/^mongodb(\+srv)?:\/\//i.test(raw)) {
+      return raw;
+    }
+
+    // If none matched, return null to allow other resolution paths.
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Resolve Mongo connection string with compatibility for database container vars:
- * The database container exposes MONGODB_URL and MONGODB_DB. If MONGODB_URI is not set,
- * build it from MONGODB_URL and MONGODB_DB (adding dbName if missing).
+ * Priority:
+ * 1) MONGODB_URI env
+ * 2) ecommerce_database/db_connection.txt (mongosh <uri> or raw uri)
+ * 3) MONGODB_URL (+ optional MONGODB_DB)
+ * 4) dev fallback
  */
 function resolveMongoUri() {
   const explicitUri = process.env.MONGODB_URI;
   if (explicitUri) return explicitUri;
+
+  const fromFile = tryReadMongoFromFile();
+  if (fromFile) return fromFile;
 
   const urlFromDbContainer = process.env.MONGODB_URL;
   const dbFromDbContainer = process.env.MONGODB_DB || process.env.MONGODB_DATABASE;

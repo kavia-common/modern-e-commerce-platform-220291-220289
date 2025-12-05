@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 const config = require('./env');
+const { ensureAllIndexes } = require('../utils/seed');
 
 /**
  * Build mongoose connection options based on env.
@@ -50,17 +51,8 @@ async function connectDB(retries = 5, baseDelayMs = 1000) {
         console.warn('MongoDB disconnected');
       });
 
-      // Optional: ensure indexes for any pre-registered models
-      // This will no-op if no models exist yet.
-      const modelNames = mongoose.modelNames();
-      for (const name of modelNames) {
-        try {
-          await mongoose.model(name).syncIndexes();
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.warn(`Index sync failed for model ${name}:`, e.message);
-        }
-      }
+      // Ensure indexes for any pre-registered models
+      await ensureAllIndexes();
 
       return mongoose.connection;
     } catch (err) {

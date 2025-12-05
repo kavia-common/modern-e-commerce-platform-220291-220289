@@ -1,19 +1,48 @@
+'use strict';
+
 const app = require('./app');
+const { connectDB } = require('./config/db');
+const config = require('./config/env');
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+let server;
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`Server running at http://${HOST}:${PORT}`);
-});
+/**
+ * Start the HTTP server after DB connection is established.
+ */
+async function start() {
+  try {
+    await connectDB();
+    server = app.listen(config.PORT, config.HOST, () => {
+      // eslint-disable-next-line no-console
+      console.log(`Server running at http://${config.HOST}:${config.PORT}`);
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to start server:', err.message);
+    process.exit(1);
+  }
+}
 
-  // Graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
+start();
+
+/**
+ * Graceful shutdown
+ */
+function shutdown(signal) {
+  // eslint-disable-next-line no-console
+  console.log(`${signal} signal received: closing HTTP server`);
+  if (server) {
     server.close(() => {
+      // eslint-disable-next-line no-console
       console.log('HTTP server closed');
       process.exit(0);
     });
-  });
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 module.exports = server;

@@ -1,9 +1,12 @@
+'use strict';
+
 const express = require('express');
 const healthController = require('../controllers/health');
+const v1Router = require('./v1');
 
 const router = express.Router();
-// Health endpoint
 
+// Health endpoint (root)
 /**
  * @swagger
  * /:
@@ -31,5 +34,8 @@ const router = express.Router();
  *                   example: development
  */
 router.get('/', healthController.check.bind(healthController));
+
+// Export both: root router and versioned sub-router for /api/v1 usage
+router.use('/v1', v1Router);
 
 module.exports = router;

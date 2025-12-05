@@ -10,14 +10,16 @@ const swaggerUi = require('swagger-ui-express');
 
 const swaggerSpec = require('../swagger');
 const config = require('./config/env');
-const rootRoutes = require('./routes'); // keeps health route at "/"
-const apiV1Routes = require('./routes/index'); // versioned router for /api/v1
+const rootRoutes = require('./routes/root'); // keeps health route at "/"
+const apiV1Routes = require('./routes/v1'); // mount versioned router directly for /api/v1
 
 // Initialize express app
 const app = express();
 
-// Trust proxy (for rate limiting and secure cookies behind proxies)
-// Disable trust proxy in test to avoid req.ip variations and other side effects
+/**
+ * Trust proxy (for rate limiting and secure cookies behind proxies)
+ * Explicitly disable in NODE_ENV==='test' to avoid req.ip variations and other side effects
+ */
 app.set('trust proxy', config.NODE_ENV === 'test' ? false : true);
 
 // Security headers (helmet) for common vulnerabilities
@@ -90,7 +92,10 @@ const apiLimiter =
 // Keep root routes (health) working
 app.use('/', rootRoutes);
 
-// Mount versioned API with rate limit
+/**
+ * Mount versioned API with optional rate limiter.
+ * In tests, apiLimiter is a noop to avoid flakiness.
+ */
 app.use('/api', apiLimiter);
 app.use('/api/v1', apiV1Routes);
 

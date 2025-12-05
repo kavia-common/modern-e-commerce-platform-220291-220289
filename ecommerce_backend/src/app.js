@@ -19,7 +19,7 @@ const app = express();
 // Trust proxy (for rate limiting and secure cookies behind proxies)
 app.set('trust proxy', true);
 
-// Security headers
+// Security headers (helmet) for common vulnerabilities
 app.use(helmet());
 
 // Request logging
@@ -38,7 +38,8 @@ app.use(
 );
 
 // Body parsers and cookies
-app.use(express.json({ limit: '1mb' }));
+const jsonLimit = process.env.BODY_JSON_LIMIT || '1mb';
+app.use(express.json({ limit: jsonLimit }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

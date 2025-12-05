@@ -5,16 +5,15 @@ const config = require('./env');
 
 /**
  * Build mongoose connection options based on env.
+ * Note: dbName ensures the connection targets the intended database,
+ * even if the URI lacks a path segment with the DB name.
  */
 function getMongooseOptions() {
   return {
-    // New URL parser & unified topology are defaults in modern mongoose,
-    // set explicitly for clarity.
     autoIndex: true, // Dev default; consider false in prod with manual index builds.
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 10000,
     socketTimeoutMS: 45000,
-    // dbName ensures connections target the right database even if URI omits it.
     dbName: config.MONGODB_DB,
   };
 }

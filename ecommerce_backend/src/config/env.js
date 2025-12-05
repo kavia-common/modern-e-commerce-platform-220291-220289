@@ -31,6 +31,38 @@ function toInt(val, defaultVal) {
 }
 
 /**
+ * Resolve Mongo connection string with compatibility for database container vars:
+ * The database container exposes MONGODB_URL and MONGODB_DB. If MONGODB_URI is not set,
+ * build it from MONGODB_URL and MONGODB_DB (adding dbName if missing).
+ */
+function resolveMongoUri() {
+  const explicitUri = process.env.MONGODB_URI;
+  if (explicitUri) return explicitUri;
+
+  const urlFromDbContainer = process.env.MONGODB_URL;
+  const dbFromDbContainer = process.env.MONGODB_DB || process.env.MONGODB_DATABASE;
+
+  if (urlFromDbContainer) {
+    try {
+      // If URL already has a path db segment, keep it; otherwise append db name when available.
+      const hasPathDb = /mongodb(\+srv)?:\/\/[^/]+\/[^?]+/.test(urlFromDbContainer);
+      if (hasPathDb || !dbFromDbContainer) {
+        return urlFromDbContainer;
+      }
+      // Append "/<db>" before query string if present
+      const [base, query = ''] = urlFromDbContainer.split('?');
+      const composed = `${base.replace(/\/?$/, '/')}${dbFromDbContainer}${query ? `?${query}` : ''}`;
+      return composed;
+    } catch (e) {
+      // fall through to default
+    }
+  }
+
+  // Default fallback (dev only)
+  return 'mongodb://appuser:dbuser123@localhost:5001/ecommerce?authSource=admin';
+}
+
+/**
  * PUBLIC_INTERFACE
  * Exports the configuration object used across the app.
  */
@@ -41,10 +73,8 @@ const config = {
   PORT: toInt(process.env.PORT, 3001),
 
   // Database
-  MONGODB_URI:
-    process.env.MONGODB_URI ||
-    'mongodb://appuser:dbuser123@localhost:5000/myapp?authSource=admin',
-  MONGODB_DB: process.env.MONGODB_DB || 'myapp',
+  MONGODB_URI: resolveMongoUri(),
+  MONGODB_DB: process.env.MONGODB_DB || 'ecommerce',
 
   // JWT
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'changeme_access',

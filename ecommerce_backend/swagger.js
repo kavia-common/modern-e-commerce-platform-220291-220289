@@ -11,11 +11,27 @@ const options = {
     },
     tags: [
       { name: 'Health', description: 'Service health and readiness' },
-      { name: 'v1', description: 'Version 1 API endpoints' },
+      { name: 'Auth', description: 'Authentication routes' },
+      { name: 'Categories', description: 'Category routes' },
+      { name: 'Products', description: 'Product catalog routes' },
+      { name: 'Cart', description: 'Shopping cart routes' },
+      { name: 'Coupons', description: 'Coupon management' },
+      { name: 'Orders', description: 'Order routes' },
+      { name: 'Webhooks', description: 'Webhook endpoints' },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [{ bearerAuth: [] }],
   },
   // Include all route files for JSDoc annotations
-  apis: ['./src/routes/*.js'],
+  apis: ['./src/routes/*.js', './src/routes/v1/*.js'],
 };
 
 const swaggerSpec = swaggerJSDoc(options);

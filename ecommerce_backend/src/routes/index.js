@@ -12,6 +12,7 @@ const router = express.Router();
  * /:
  *   get:
  *     summary: Health endpoint
+ *     tags: [Health]
  *     responses:
  *       200:
  *         description: Service health check passed

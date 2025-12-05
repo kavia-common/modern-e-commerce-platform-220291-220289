@@ -17,14 +17,21 @@ const apiV1Routes = require('./routes/index'); // versioned router for /api/v1
 const app = express();
 
 // Trust proxy (for rate limiting and secure cookies behind proxies)
-app.set('trust proxy', true);
+// Disable trust proxy in test to avoid req.ip variations and other side effects
+app.set('trust proxy', config.NODE_ENV === 'test' ? false : true);
 
 // Security headers (helmet) for common vulnerabilities
 app.use(helmet());
 
-// Request logging
+// Request logging (quieter in test)
 app.use(
-  morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev')
+  morgan(
+    config.NODE_ENV === 'production'
+      ? 'combined'
+      : config.NODE_ENV === 'test'
+      ? 'tiny'
+      : 'dev'
+  )
 );
 
 // CORS setup from env
@@ -69,13 +76,16 @@ app.use('/docs', swaggerUi.serve, (req, res, next) => {
   swaggerUi.setup(dynamicSpec)(req, res, next);
 });
 
-// Basic rate limiter for API routes
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // limit each IP to 300 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Basic rate limiter for API routes (disabled during test to avoid flakiness)
+const apiLimiter =
+  config.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 300, // limit each IP to 300 requests per windowMs
+        standardHeaders: true,
+        legacyHeaders: false,
+      });
 
 // Keep root routes (health) working
 app.use('/', rootRoutes);

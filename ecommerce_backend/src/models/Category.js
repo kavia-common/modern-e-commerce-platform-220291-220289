@@ -14,6 +14,6 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-CategorySchema.index({ slug: 1 }, { unique: true });
+// Rely on the 'unique: true' in schema path for slug to create the index via syncIndexes()
 
 module.exports = mongoose.model('Category', CategorySchema);

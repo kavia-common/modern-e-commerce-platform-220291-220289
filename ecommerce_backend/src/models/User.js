@@ -39,6 +39,6 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-UserSchema.index({ email: 1 }, { unique: true });
+// Rely on the 'unique: true' at schema path level for email; syncIndexes will create it.
 
 module.exports = mongoose.model('User', UserSchema);
